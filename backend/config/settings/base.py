@@ -1,8 +1,8 @@
 from pathlib import Path
-import dj_database_url
-
 import os
 from datetime import timedelta
+
+import dj_database_url
 from dotenv import load_dotenv
 
 
@@ -122,10 +122,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 # DATABASE
 # ============================================================
 
-# ============================================================
-# DATABASE
-# ============================================================
-
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 if DATABASE_URL:
@@ -144,6 +140,7 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
 
 # ============================================================
 # PASSWORD VALIDATION
@@ -214,7 +211,25 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "",
+        (
+            "http://localhost:5173,"
+            "http://127.0.0.1:5173,"
+            "https://notification-system-mu.vercel.app"
+        ),
+    ).split(",")
+    if origin.strip()
+]
+
+
+# ============================================================
+# CSRF
+# ============================================================
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://notification-system-mu.vercel.app",
     ).split(",")
     if origin.strip()
 ]
@@ -319,14 +334,18 @@ TWILIO_WHATSAPP_TO = os.getenv(
 # ============================================================
 
 # Local development:
-# private_key.pem is used when VAPID_PRIVATE_KEY is not provided.
+# private_key.pem is used when VAPID_PRIVATE_KEY
+# is not provided.
+
 VAPID_PRIVATE_KEY_FILE = os.getenv(
     "VAPID_PRIVATE_KEY_FILE",
     "private_key.pem",
 ).strip()
 
+
 # Production / Render:
 # Store the actual VAPID private key in an environment variable.
+
 VAPID_PRIVATE_KEY = os.getenv(
     "VAPID_PRIVATE_KEY",
     "",
