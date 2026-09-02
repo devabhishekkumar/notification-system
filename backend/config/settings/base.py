@@ -1,4 +1,6 @@
 from pathlib import Path
+import dj_database_url
+
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -120,13 +122,28 @@ WSGI_APPLICATION = "config.wsgi.application"
 # DATABASE
 # ============================================================
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+# ============================================================
+# DATABASE
+# ============================================================
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+else:
+    # Local development
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ============================================================
 # PASSWORD VALIDATION
@@ -301,9 +318,18 @@ TWILIO_WHATSAPP_TO = os.getenv(
 # WEB PUSH / VAPID
 # ============================================================
 
+# Local development:
+# private_key.pem is used when VAPID_PRIVATE_KEY is not provided.
 VAPID_PRIVATE_KEY_FILE = os.getenv(
     "VAPID_PRIVATE_KEY_FILE",
     "private_key.pem",
+).strip()
+
+# Production / Render:
+# Store the actual VAPID private key in an environment variable.
+VAPID_PRIVATE_KEY = os.getenv(
+    "VAPID_PRIVATE_KEY",
+    "",
 ).strip()
 
 VAPID_PUBLIC_KEY = os.getenv(
