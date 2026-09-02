@@ -11,6 +11,10 @@ from .base import NotificationProvider
 class WebPushProvider(NotificationProvider):
     """
     Web Push notification provider using pywebpush.
+
+    Supports:
+    - Local development using private_key.pem
+    - Production/Render using VAPID_PRIVATE_KEY environment variable
     """
 
     def send(
@@ -25,6 +29,12 @@ class WebPushProvider(NotificationProvider):
         # VAPID CONFIGURATION
         # ====================================================
 
+        private_key = getattr(
+            settings,
+            "VAPID_PRIVATE_KEY",
+            "",
+        )
+
         private_key_file = getattr(
             settings,
             "VAPID_PRIVATE_KEY_FILE",
@@ -37,15 +47,6 @@ class WebPushProvider(NotificationProvider):
             "",
         )
 
-        if not private_key_file:
-            return {
-                "success": False,
-                "provider_message_id": None,
-                "error": (
-                    "VAPID_PRIVATE_KEY_FILE is not configured."
-                ),
-            }
-
         if not claims_email:
             return {
                 "success": False,
@@ -56,20 +57,39 @@ class WebPushProvider(NotificationProvider):
             }
 
         # ====================================================
-        # PRIVATE KEY FILE
+        # PRIVATE KEY
         # ====================================================
 
-        private_key_path = (
-            Path(settings.BASE_DIR) / private_key_file
-        )
+        vapid_private_key = None
 
-        if not private_key_path.exists():
+        # Production / Render
+        if private_key:
+            vapid_private_key = private_key
+
+        # Local development
+        elif private_key_file:
+            private_key_path = (
+                Path(settings.BASE_DIR) / private_key_file
+            )
+
+            if not private_key_path.exists():
+                return {
+                    "success": False,
+                    "provider_message_id": None,
+                    "error": (
+                        "VAPID private key file not found: "
+                        f"{private_key_path}"
+                    ),
+                }
+
+            vapid_private_key = str(private_key_path)
+
+        else:
             return {
                 "success": False,
                 "provider_message_id": None,
                 "error": (
-                    f"VAPID private key file not found: "
-                    f"{private_key_path}"
+                    "VAPID private key is not configured."
                 ),
             }
 
@@ -185,7 +205,7 @@ class WebPushProvider(NotificationProvider):
             webpush(
                 subscription_info=subscription,
                 data=json.dumps(payload),
-                vapid_private_key=str(private_key_path),
+                vapid_private_key=vapid_private_key,
                 vapid_claims=vapid_claims,
             )
 
